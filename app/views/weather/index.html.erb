@@ -19,6 +19,7 @@
     <%= form.submit "Search" %>
 <% end %>
 </p>
+<p><i>Zip Code Weather Results are Cached for 30 minutes from the original request</i></p>
 
 <% cache(@geocode, expires_in: 30.minutes) do %>
     <h3>Geocoded Location by Zip</h3>

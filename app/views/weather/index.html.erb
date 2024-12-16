@@ -1,0 +1,75 @@
+<h1 class="margin-top-md ">Welcome to the Weather Checker!</h1>
+
+<h3>Current Weather for the following Address:</h3>
+<%
+    # Using String.dup method to get around frozen param strings for StreetAddress gem
+    # Setting a Default Address for demonstration puirposes
+    weather_address = params[:search_address].dup || "133 W. Broadway, Eugene, OR 97401"
+    address_to_code = StreetAddress.parse(weather_address)
+%>
+<p>
+    <b>Extracted Postal Code (for Geocoding):</b>
+    <span id="extracted_postal_code"><%= address_to_code['zip'] %></span>
+</p>
+
+<p>
+<%= form_with url: "/", method: :get do |form| %>
+    <%= form.label :query, "Check Weather At:" %>
+    <%= form.search_field :search_address, :value => params[:search_address] %>
+    <%= form.submit "Search" %>
+<% end %>
+</p>
+
+<% cache(@geocode, expires_in: 30.minutes) do %>
+    <h3>Geocoded Location by Zip</h3>
+    <% if @geocode['zip'] %>
+        <p>Geocoded Location</p>
+        <ul>
+            <li>lat: <%= @geocode['lat'] %> </li>
+            <li>lon: <%= @geocode['lon'] %> </li>
+            <li>name: <%= @geocode['name'] %> </li>
+        </ul>
+    <% else %>
+        <code> Confirm that your Weather API Code is accessible</code>
+    <% end %>
+<% end %>
+
+<% cache(@geocoded_weather, expires_in: 30.minutes) do %>
+    <h3>Geocoded Location Weather</h3>
+    <% if @geocoded_weather %>
+        <p>Current Weather in <b><%= @geocode['zip'] %></b></p>
+        <ul>
+            <li>Temperature: <%= @geocoded_weather['main']['temp'] %>°F</li>
+            <li>Humidity: <%= @geocoded_weather['main']['humidity'] %> </li>
+            <li>Wind Speed: <%= @geocoded_weather['wind']['speed']  %> mph </li>
+        </ul>
+    <% else %>
+        <code> No Geocoded Weather! </code>
+    <% end %>
+
+<% end %>
+
+<% cache(@geocoded_forecast, expires_in: 30.minutes) do %>
+    <h3>Geocoded Location Forecast</h3>
+    <% if @geocoded_forecast %>
+        <% @geocoded_forecast['list'].each do |forecast| %>
+            <p>
+                Forecast for
+                <% time_stmap = Time.at(forecast['dt']).to_datetime.localtime %>
+                <%= time_stmap.strftime("%A %B %d, %Y") %>
+                <%= time_stmap.strftime("%I:%M %p") %>
+            </p>
+            <ul>
+                <li>Temperature: <%= forecast['main']['temp'] %>°F</li>
+                <!-- Anticipated High/Low are almost always just the temp...
+                <li>Anticipated High: <%= forecast['main']['temp_max'] %>°F</li>
+                <li>Anticipated Low: <%= forecast['main']['temp_min'] %>°F</li>
+                -->
+                <li>Humidity: <%= forecast['main']['humidity'] %> </li>
+            </ul>
+        <% end %>
+    <% else %>
+        <code> No Geocoded Weather! </code>
+    <% end %>
+<% end %>
+
